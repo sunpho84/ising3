@@ -74,7 +74,7 @@ int main()
 #endif
   
   double beta=1.4407228;
-  int L=20;
+  int L=40;
   int N=L*L;
   int seed=124634;
   
@@ -85,7 +85,7 @@ int main()
   for(int& c : conf)
     c=binomial_distribution<int>(1,0.5)(gen)*2-1;
   
-  int nConfs=10;
+  int nConfs=10000;
   
   auto beginProgTime=now();
   
@@ -100,17 +100,13 @@ int main()
 	  int backupSiteState=conf[iSite];
 	  
 	  // cout<<"Before: "<<conf[iSite]<<endl;
-	  int enBefore=computeSiteEn(conf,L,N,iSite);
+	  int enBefore=computeEn(conf,L,N);
 	  // cout<<"enBefore: "<<enBefore<<endl;
-	  binomial_distribution siteDistr(1,0.5);
-	  if(siteDistr(gen)==0)
-	    conf[iSite]=-1;
-	  else
-	    conf[iSite]=+1;
+	  conf[iSite]=-conf[iSite];
 	  
 	  // cout<<"After: "<<conf[iSite]<<endl;
 	  auto beginEnMeas=now();
-	  int enAfter=computeSiteEn(conf,L,N,iSite);
+	  int enAfter=computeEn(conf,L,N);
 	  // cout<<"enAfter: "<<enAfter<<endl;
 	  computeEnTime+=timeFrom(beginEnMeas);
 	  
@@ -125,9 +121,9 @@ int main()
 	      double pAcc=exp(-beta*eDiff);
 	      
 	      // cout<<"Pacc: "<<pAcc<<endl;
-	      binomial_distribution<int> distrAcc(1,pAcc);
+	      uniform_real_distribution<double> distrAcc(0,1.0);
 	      
-	      int acc=distrAcc(gen);
+	      int acc=distrAcc(gen)<pAcc;
 	      // cout<<"acc: "<<acc<<endl;
 	      
 	      if(acc==0)
@@ -139,7 +135,7 @@ int main()
 	      // 	cout<<"Accepted"<<endl;
 	    }
 	}
-
+      
 #ifdef PLOT
       fprintf(gp,"plot '-' w boxxyerror\n");
       for(int site=0;site<N;site++)
