@@ -1,14 +1,14 @@
 gnuplot 
 ---
 
-Open the program (after main)l
-https://github.com/sunpho84/ising2/blob/badff1a75cebbd88a37eb5920fcfe5f940e1d2a5/ising.cpp#L34-L38
+Open the program (after main)
+https://github.com/sunpho84/ising3/blob/14449f7214e4192eeef5d57e67884728d1e4486a/ising.cpp#L34-L38
 
 update the plot after conf is updated
-https://github.com/sunpho84/ising2/blob/badff1a75cebbd88a37eb5920fcfe5f940e1d2a5/ising.cpp#L102-L109
+https://github.com/sunpho84/ising3/blob/14449f7214e4192eeef5d57e67884728d1e4486a/ising.cpp#L102-L109
 
 close before the program ends
-https://github.com/sunpho84/ising2/blob/badff1a75cebbd88a37eb5920fcfe5f940e1d2a5/ising.cpp#L115-L119
+https://github.com/sunpho84/ising3/blob/14449f7214e4192eeef5d57e67884728d1e4486a/ising.cpp#L115-L119
 
 
 timings
