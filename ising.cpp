@@ -1,30 +1,37 @@
 #include <random>
+#include <unistd.h>
 #include <vector>
-#include <cstdio>
+#include <iostream>
 
 using namespace std;
 
-/** For reference, critical beta is .4407228 */
-const double Beta=0.29;
-const size_t L=100;
-const size_t N=L*L;
-const int seed=124634;
-const int nConfs=1000;
+#define PLOT
 
-/** Computes the energy */
-int computeEn(const vector<int>& conf)
+#include <chrono>
+
+size_t totalTime=0;
+size_t computeEnTime=0;
+
+auto now()
+{
+  return chrono::high_resolution_clock::now();
+}
+
+size_t timeFrom(chrono::high_resolution_clock::time_point from)
+{
+  return chrono::duration_cast<chrono::nanoseconds>(chrono::high_resolution_clock::now()-from).count();
+}
+
+int computeEn(vector<int>& conf,int L,int N)
 {
   int en=0;
-  
-  for(size_t iSite=0;iSite<N;iSite++)
+  for(int iSite=0;iSite<N;iSite++)
     {
-      /** Coverts to coordinate */
-      const int y=iSite/L;
-      const int x=iSite%L;
+      int y=iSite/L;
+      int x=iSite%L;
       
-      /** Computes the neighbor in the two directions */
-      const int neighSiteX=y*L+(x+1)%L;
-      const int neighSiteY=((y+1)%L)*L+x;
+      int neighSiteX=y*L+(x+1)%L;
+      int neighSiteY=((y+1)%L)*L+x;
       
       en-=conf[neighSiteX]*conf[iSite]+conf[neighSiteY]*conf[iSite];
     }
@@ -32,12 +39,27 @@ int computeEn(const vector<int>& conf)
   return en;
 }
 
-/** Computes the magnetization */
-double computeMagnetization(const vector<int>& conf)
+int computeSiteEn(vector<int>& conf,int L,int N,int iSite)
+{
+  int en=0;
+      int y=iSite/L;
+      int x=iSite%L;
+      
+      int neighSiteX=y*L+(x+1)%L;
+      int neighSiteX2=y*L+(x+L-1)%L;
+      int neighSiteY=((y+1)%L)*L+x;
+      int neighSiteY2=((y+L-1)%L)*L+x;
+      
+      en-=conf[neighSiteX]*conf[iSite]+conf[neighSiteY]*conf[iSite];
+      en-=conf[neighSiteX2]*conf[iSite]+conf[neighSiteY2]*conf[iSite];
+  
+  return en;
+}
+
+double computeMagnetization(vector<int>& conf,int L,int N)
 {
   int mag=0;
-  
-  for(size_t iSite=0;iSite<N;iSite++)
+  for(int iSite=0;iSite<N;iSite++)
     mag+=conf[iSite];
   
   return (double)mag/N;
@@ -46,85 +68,101 @@ double computeMagnetization(const vector<int>& conf)
 int main()
 {
 #ifdef PLOT
-  /** Open the plot */
   FILE* gp=popen("gnuplot","w");
   fprintf(gp,"unset key\n");
   fprintf(gp,"set style fill solid\n");
-#endif 
-  /** Open the measurement file*/
-  FILE* measFile=fopen("meas.txt","w");
+#endif
   
-  /** Configuration */
+  double beta=1.4407228;
+  int L=20;
+  int N=L*L;
+  int seed=124634;
+  
   vector<int> conf(N);
   
-  /** Random number generator */
-  mt19937_64 gen(seed);
+  mt19937 gen(seed);
   
-  /** Creates the distribution */
-  for(size_t i=0;i<N;i++)
-    conf[i]=binomial_distribution<int>(1,0.5)(gen)*2-1;
+  for(int& c : conf)
+    c=binomial_distribution<int>(1,0.5)(gen)*2-1;
+  
+  int nConfs=10;
+  
+  auto beginProgTime=now();
   
   /** Produce nConfs */
   for(int iConf=0;iConf<nConfs;iConf++)
     {
-      /** Updates all sites */
-      for(size_t iSite=0;iSite<N;iSite++)
+      /** Update each esite*/
+      for(int iSite=0;iSite<N;iSite++)
 	{
-	  /** Creates the est configuration, first copying all sites */
-	  vector<int> testConf=conf;
+	  // cout<<"Looping on site "<<iSite<<endl; 
 	  
-	  /** Draw a fair binomial distribitution, 0 or 1 with probability 50%, and assigns to the site */
-	  testConf[iSite]=binomial_distribution(1,0.5)(gen)*2-1;
+	  int backupSiteState=conf[iSite];
 	  
-	  /** Computes energy of the old conf */
-	  const int enBefore=computeEn(conf);
+	  // cout<<"Before: "<<conf[iSite]<<endl;
+	  int enBefore=computeSiteEn(conf,L,N,iSite);
+	  // cout<<"enBefore: "<<enBefore<<endl;
+	  binomial_distribution siteDistr(1,0.5);
+	  if(siteDistr(gen)==0)
+	    conf[iSite]=-1;
+	  else
+	    conf[iSite]=+1;
 	  
-	  /** Computes energy of the new conf */
-	  const int enAfter=computeEn(testConf);
+	  // cout<<"After: "<<conf[iSite]<<endl;
+	  auto beginEnMeas=now();
+	  int enAfter=computeSiteEn(conf,L,N,iSite);
+	  // cout<<"enAfter: "<<enAfter<<endl;
+	  computeEnTime+=timeFrom(beginEnMeas);
 	  
-	  /** Computes energy difference */
-	  const int eDiff=enAfter-enBefore;
+	  int eDiff=enAfter-enBefore;
+	  // cout<<"eDiff: "<<eDiff<<endl;
 	  
-	  /** Computes the acceptance probability */
-	  const double pAcc=std::min(1.0,exp(-Beta*eDiff));
-	  
-	  /** Draw acceptance from the binomali distribution with probability pAcc */
-	  const int acc=binomial_distribution<int>(1,pAcc)(gen);
-	  
-	  /** If not accepted, bring back the original site*/
-	  if(acc)
-	    conf=testConf;
+	  if(eDiff<=0)
+	    // cout<<"Accepted as energy is decreasing"<<endl
+	    ;
+	  else
+	    {
+	      double pAcc=exp(-beta*eDiff);
+	      
+	      // cout<<"Pacc: "<<pAcc<<endl;
+	      binomial_distribution<int> distrAcc(1,pAcc);
+	      
+	      int acc=distrAcc(gen);
+	      // cout<<"acc: "<<acc<<endl;
+	      
+	      if(acc==0)
+		{
+		  conf[iSite]=backupSiteState;
+		  // cout<<"Not accepted"<<endl;
+		}
+	      // else
+	      // 	cout<<"Accepted"<<endl;
+	    }
 	}
-      
+
 #ifdef PLOT
-      /** Plot the configuration */
       fprintf(gp,"plot '-' w boxxyerror\n");
-      for(size_t site=0;site<N;site++)
+      for(int site=0;site<N;site++)
 	if(conf[site]==-1)
 	  fprintf(gp,"%lg %lg 0.5 0.5\n",site%L+0.5,int(site/L)+0.5);
       fprintf(gp,"e\n");
       fflush(gp);
 #endif
       
-      /** Computes the magnetization */
-      const double mag=computeMagnetization(conf);
+      double mag=computeMagnetization(conf,L,N);
+      cout<<"Mag "<<mag<<endl;
       
-      /** Computes the energy */
-      const double ene=computeEn(conf);
-      
-      /** Print the measurement */
-      fprintf(measFile,"%lg %lg\n",mag,ene);
-      fflush(measFile);
-      
-      /** Report progress */
-      printf("Progress: %d/%d\n",iConf,nConfs);
+      //sleep(1);
     }
+  
+  totalTime+=timeFrom(beginProgTime);
+  
+  cout<<"TotalTime: "<<totalTime/1e9<<" s"<<endl;
+  cout<<"ComputeEnergyTime: "<<computeEnTime/1e9<<" s"<<endl;
   
 #ifdef PLOT
   pclose(gp);
 #endif
-  
-  fclose(measFile);
   
   return 0;
 }
