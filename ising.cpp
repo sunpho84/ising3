@@ -25,7 +25,8 @@ size_t timeFrom(chrono::high_resolution_clock::time_point from)
 int computeEn(vector<int>& conf,int L,int N)
 {
   int en=0;
-  for(int iSite=0;iSite<N;iSite++)
+ #pragma omp parallel for reduction(+:en)
+	for(int iSite=0;iSite<N;iSite++)
     {
       int y=iSite/L;
       int x=iSite%L;
