@@ -67,11 +67,11 @@ double computeMagnetization(vector<int>& conf,int L,int N)
   return (double)mag/N;
 }
 
-int main()
+int main(int narg,char** arg)
 {
   const size_t nThreads=omp_get_max_threads();
   printf("NThreads: %zu\n",nThreads);
-	
+  
 #ifdef PLOT
   FILE* gp=popen("gnuplot","w");
   fprintf(gp,"unset key\n");
@@ -80,6 +80,15 @@ int main()
   
   double beta=1.4407228;
   int L=40;
+  
+  if(narg>1)
+    L=atoi(arg[1]);
+  
+  int nConfs=10000;
+  
+  if(narg>2)
+    nConfs=atoi(arg[2]);
+    
   int N=L*L;
   int seed=124634;
   
@@ -89,8 +98,6 @@ int main()
   
   for(int& c : conf)
     c=binomial_distribution<int>(1,0.5)(gen)*2-1;
-  
-  int nConfs=10000;
   
   auto beginProgTime=now();
   
