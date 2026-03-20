@@ -1,5 +1,6 @@
 #include <random>
 #include <unistd.h>
+#include <omp.h>
 #include <vector>
 #include <iostream>
 
