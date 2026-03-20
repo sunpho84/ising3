@@ -73,3 +73,9 @@ OMP_NUM_THREADS=N GOMP_CPU_AFFINITY="$(echo {0..48})" ./ising L nConfs
 ```
 in the list of places, the id of the core to be used is labelled with P#
 
+passing L and nconfs to the program
+------------------------
+```
+./ising L nconfs
+```
+
