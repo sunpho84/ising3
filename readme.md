@@ -38,3 +38,11 @@ parallel
 ```
 g++ -o ising ising.cpp -fopenmp
 ```
+
+
+optimization 
+-------
+```
+g++ -o ising ising.cpp -O3
+```
+
