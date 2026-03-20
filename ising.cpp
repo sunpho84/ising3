@@ -1,11 +1,12 @@
 #include <random>
 #include <unistd.h>
+#include <omp.h>
 #include <vector>
 #include <iostream>
 
 using namespace std;
 
-#define PLOT
+//#define PLOT
 
 #include <chrono>
 
@@ -25,7 +26,8 @@ size_t timeFrom(chrono::high_resolution_clock::time_point from)
 int computeEn(vector<int>& conf,int L,int N)
 {
   int en=0;
-  for(int iSite=0;iSite<N;iSite++)
+ #pragma omp parallel for reduction(+:en)
+	for(int iSite=0;iSite<N;iSite++)
     {
       int y=iSite/L;
       int x=iSite%L;
@@ -67,6 +69,9 @@ double computeMagnetization(vector<int>& conf,int L,int N)
 
 int main()
 {
+  const size_t nThreads=omp_get_max_threads();
+  printf("NThreads: %zu\n",nThreads);
+	
 #ifdef PLOT
   FILE* gp=popen("gnuplot","w");
   fprintf(gp,"unset key\n");
