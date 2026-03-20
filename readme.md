@@ -51,3 +51,13 @@ choosing nthreads
 ```
 OMP_NUM_THREADS=2 ./ising
 ```
+
+CPU structure
+---
+```
+lstopo cpu.svg
+```
+![cpu](cpu.svg)
+
+
+
