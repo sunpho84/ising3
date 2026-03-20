@@ -68,6 +68,9 @@ double computeMagnetization(vector<int>& conf,int L,int N)
 
 int main()
 {
+  const size_t nThreads=omp_get_max_threads();
+  printf("NThreads: %zu\n",nThreads);
+	
 #ifdef PLOT
   FILE* gp=popen("gnuplot","w");
   fprintf(gp,"unset key\n");
