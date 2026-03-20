@@ -79,3 +79,26 @@ passing L and nconfs to the program
 ./ising L nconfs
 ```
 
+Running different parameters
+---
+
+```
+$ cat pars.txt #L nconfs nthreads
+3 100 1
+3 100 2
+3 100 3
+3 100 4
+...
+
+$ while read L nconfs nthreads;do OMP_NUM_THREADS=$nthreads ./ising $L $nconfs;done < pars.txt
+```
+
+or
+
+```bash
+for i in $(seq 1 16)
+do
+    OMP_NUM_THREADS=$i GOMP_CPU_AFFINITY="$(echo {1..48})" ./ising 300 1
+done
+```
+
