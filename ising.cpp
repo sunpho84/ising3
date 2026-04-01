@@ -112,12 +112,14 @@ int main(int narg,char** arg)
 	  int backupSiteState=conf[iSite];
 	  
 	  // cout<<"Before: "<<conf[iSite]<<endl;
+	  auto beginEnMeas=now();
 	  int enBefore=computeEn(conf,L,N);
+	  computeEnTime+=timeFrom(beginEnMeas);
 	  // cout<<"enBefore: "<<enBefore<<endl;
 	  conf[iSite]=-conf[iSite];
 	  
 	  // cout<<"After: "<<conf[iSite]<<endl;
-	  auto beginEnMeas=now();
+	  beginEnMeas=now();
 	  int enAfter=computeEn(conf,L,N);
 	  // cout<<"enAfter: "<<enAfter<<endl;
 	  computeEnTime+=timeFrom(beginEnMeas);
