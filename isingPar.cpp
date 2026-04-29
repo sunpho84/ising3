@@ -117,6 +117,9 @@ double computeMagnetization(const vector<int>& conf)
 
 int main(int narg,char** arg)
 {
+  timer initTime;
+  initTime.start();
+  
   if(narg<3)
     {
       fprintf(stderr,"Use %s L nConfs\n",arg[0]);
@@ -127,7 +130,7 @@ int main(int narg,char** arg)
   nConfs=atoi(arg[2]);
   N=L*L;
   
-  timer totalTime;
+  timer simulTime;
   
   for(size_t i=0;i<1000000;i++)
     {
@@ -163,17 +166,30 @@ int main(int narg,char** arg)
 #endif
   
   /** Creates the first configuration */
-  for(size_t i=0;i<N;i++)
-    {
 #ifdef PARALLEL_RNG
-      prng_engine& genView=gen;
+# pragma omp parallel
+  {
+    const size_t iThread=omp_get_thread_num();
+    const size_t chunkSize=(N+nThreads-1)/nThreads;
+    const size_t beg=chunkSize*iThread;
+    const size_t end=std::min(N,beg+chunkSize);
+    prng_engine genView=gen;
+    
+    genView.discard(2*beg);
+    
+    for(size_t iSite=beg;iSite<end;iSite++)
+      conf[iSite]=binomial_distribution<int>(1,0.5)(genView)*2-1;
+  }
 #else
-      mt19937_64& genView=gen[i];
+# pragma omp parallel for
+  for(size_t iSite=0;iSite<N;iSite++)
+    conf[iSite]=binomial_distribution<int>(1,0.5)(gen[iSite])*2-1;
 #endif
-      conf[i]=binomial_distribution<int>(1,0.5)(genView)*2-1;
-    }
   
-  totalTime.start();
+  initTime.stop();
+  printf("Init time: %lg s\n",initTime.get());
+  
+  simulTime.start();
   
   /** Produce nConfs */
   for(int iConf=0;iConf<nConfs;iConf++)
@@ -268,9 +284,9 @@ int main(int narg,char** arg)
   
   fclose(measFile);
   
-  totalTime.stop();
+  simulTime.stop();
   
-  printf("Duration: %lg s\n",totalTime.get());
+  printf("Simul time: %lg s\n",simulTime.get());
   
   return 0;
 }
